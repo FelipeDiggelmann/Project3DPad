@@ -1,6 +1,7 @@
 import { Component, ElementRef, OnInit, ViewChild, AfterViewInit, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import * as THREE from 'three';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
 interface NoteData {
   id: number;
@@ -27,6 +28,7 @@ export class UniversoViewComponent implements AfterViewInit {
   private renderer!: THREE.WebGLRenderer;
   private scene!: THREE.Scene;
   private camera!: THREE.PerspectiveCamera;
+  private controls!: OrbitControls;
 
   private raycaster = new THREE.Raycaster();
   private mouse = new THREE.Vector2(); // Guarda a posição X, Y do mouse na tela
@@ -58,8 +60,13 @@ export class UniversoViewComponent implements AfterViewInit {
       this.selectedNote = this.intersectedObj.userData;
       console.log('Nota clicada:', this.selectedNote); // Para debug
     } else {
-      // Se clicar no fundo vazio, fecha a nota
-      this.selectedNote = null;
+      // Pequena lógica para não fechar a nota se eu clicar na própria interface (overlay)
+      // O Javascript propaga eventos. Se clicar no fundo do canvas (nada), fecha.
+      const target = event.target as HTMLElement;
+      if (target.tagName === 'CANVAS') {
+        // Se clicar no fundo vazio, fecha a nota
+        this.selectedNote = null;
+      }     
     }
   }
 
@@ -101,6 +108,19 @@ private notesGroup!: THREE.Group;
       antialias: true
     });
     this.renderer.setSize(window.innerWidth, window.innerHeight);
+
+    // --- CONFIGURAÇÃO DOS CONTROLES ---
+   // Passamos a câmera e o elemento DOM que vai ouvir o mouse (o canvas)
+    this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+
+    // Habilita "inércia" (o movimento continua um pouco depois que você solta o mouse)
+    // Dá uma sensação muito mais premium e suave
+    this.controls.enableDamping = true;
+    this.controls.dampingFactor = 0.05;
+
+    // Limites (opcional): Impede que o usuário dê zoom demais ou de menos
+    this.controls.minDistance = 5;
+    this.controls.maxDistance = 100;
 
     // --- 4. CRIANDO AS NOTAS ---
     this.createNotesUniverse();
@@ -145,7 +165,10 @@ private notesGroup!: THREE.Group;
     // 1. Atualiza o "Laser" com a posição da câmera e do mouse
     this.raycaster.setFromCamera(this.mouse, this.camera);
 
-    // 2. Verifica se o laser bateu nas esferas (filhos do grupo notesGroup)
+    // 2. Atualiza a suavidade dos controles da câmera
+    if (this.controls) this.controls.update();
+
+    // 3. Verifica se o laser bateu nas esferas (filhos do grupo notesGroup)
     if (this.notesGroup) {
       this.notesGroup.rotation.y += 0.002; // Mantém a rotação lenta
 
