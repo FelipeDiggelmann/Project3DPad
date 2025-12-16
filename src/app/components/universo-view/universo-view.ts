@@ -1,4 +1,5 @@
 import { Component, ElementRef, OnInit, ViewChild, AfterViewInit, HostListener } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import * as THREE from 'three';
 
 interface NoteData {
@@ -13,6 +14,7 @@ interface NoteData {
 @Component({
   selector: 'app-universo-view',
   standalone: true,
+  imports : [CommonModule],
   templateUrl: './universo-view.html',
   styleUrls: ['./universo-view.scss']
 })
@@ -30,6 +32,8 @@ export class UniversoViewComponent implements AfterViewInit {
   private mouse = new THREE.Vector2(); // Guarda a posição X, Y do mouse na tela
   private intersectedObj: THREE.Object3D | null = null; // Guarda qual objeto o mouse está em cima
 
+  public selectedNote: any = null;
+
   constructor() { }
 
   // Usamos AfterViewInit porque precisamos que o HTML (o canvas) já exista
@@ -44,6 +48,19 @@ export class UniversoViewComponent implements AfterViewInit {
     // Isso é o que o Three.js entende: 0 é o centro, -1 é esquerda/baixo, +1 é direita/cima
     this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     this.mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
+  }
+
+  @HostListener('click', ['$event'])
+  onClick(event: MouseEvent) {
+    // Só tentamos abrir nota se o Raycaster encontrou algo no 'onMouseMove'
+    if (this.intersectedObj) {
+      // Pegamos os dados que escondemos no userData
+      this.selectedNote = this.intersectedObj.userData;
+      console.log('Nota clicada:', this.selectedNote); // Para debug
+    } else {
+      // Se clicar no fundo vazio, fecha a nota
+      this.selectedNote = null;
+    }
   }
 
 private notesGroup!: THREE.Group; 
@@ -108,6 +125,13 @@ private notesGroup!: THREE.Group;
       noteMesh.position.x = (Math.random() - 0.5) * 40;
       noteMesh.position.y = (Math.random() - 0.5) * 40;
       noteMesh.position.z = (Math.random() - 0.5) * 40;
+
+      noteMesh.userData = {
+        id: i,
+        title: `Ideia Brilhante #${i + 1}`,
+        content: 'Aqui vai um texto da sua anotação.',
+        date: new Date().toLocaleDateString()
+      };
 
       this.notesGroup.add(noteMesh);
     }

@@ -1,1 +1,19 @@
 <canvas #rendererCanvas id="renderCanvas"></canvas>
+
+<div class="overlay-container" *ngIf="selectedNote">
+  <div class="note-card">
+    <div class="header">
+      <h2>{{ selectedNote.title }}</h2>
+      <button (click)="selectedNote = null">✖</button>
+    </div>
+    <p class="date">{{ selectedNote.date }}</p>
+    <div class="content">
+      {{ selectedNote.content }}
+    </div>
+    <button class="action-btn">Editar Nota</button>
+  </div>
+</div>
+
+<div class="hint" *ngIf="!selectedNote">
+  Clique em uma esfera para ler
+</div>
