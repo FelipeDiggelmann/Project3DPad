@@ -2,15 +2,7 @@ import { Component, ElementRef, OnInit, ViewChild, AfterViewInit, HostListener }
 import { CommonModule } from '@angular/common';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-
-interface NoteData {
-  id: number;
-  title: string;
-  color: string;
-  x: number;
-  y: number;
-  z: number;
-}
+import { NoteService, NoteData } from '../../services/note';
 
 @Component({
   selector: 'app-universo-view',
@@ -34,9 +26,11 @@ export class UniversoViewComponent implements AfterViewInit {
   private mouse = new THREE.Vector2(); // Guarda a posição X, Y do mouse na tela
   private intersectedObj: THREE.Object3D | null = null; // Guarda qual objeto o mouse está em cima
 
+  private sphereGeometry = new THREE.SphereGeometry(1, 32, 32);
+
   public selectedNote: any = null;
 
-  constructor() { }
+  constructor(private noteService: NoteService) { }
 
   // Usamos AfterViewInit porque precisamos que o HTML (o canvas) já exista
   ngAfterViewInit(): void {
@@ -128,35 +122,52 @@ private notesGroup!: THREE.Group;
 
   private createNotesUniverse(): void {
     this.notesGroup = new THREE.Group(); // Cria um container para agrupar todas as notas
-    
-    // Vamos simular 50 notas aleatórias
-    const geometry = new THREE.SphereGeometry(1, 32, 32); // Esfera: Raio 1, suavidade 32
 
-    for (let i = 0; i < 50; i++) {
-      // Cria uma cor aleatória para cada nota
-      const color = new THREE.Color(Math.random(), Math.random(), Math.random());
-      
-      // Material Standard reage à luz (dá efeito de 3D real)
-      const material = new THREE.MeshStandardMaterial({ color: color, roughness: 0.5 });
-      
-      const noteMesh = new THREE.Mesh(geometry, material);
+    // Criamos os dados do serviço
+    const notes = this.noteService.getNotes();
 
-      // Posiciona aleatoriamente no espaço (entre -20 e 20)
-      noteMesh.position.x = (Math.random() - 0.5) * 40;
-      noteMesh.position.y = (Math.random() - 0.5) * 40;
-      noteMesh.position.z = (Math.random() - 0.5) * 40;
-
-      noteMesh.userData = {
-        id: i,
-        title: `Ideia Brilhante #${i + 1}`,
-        content: 'Aqui vai um texto da sua anotação.',
-        date: new Date().toLocaleDateString()
-      };
-
-      this.notesGroup.add(noteMesh);
-    }
+    // Iteramos sobre os dados reais
+    notes.forEach(note => {
+      this.createSingleSphere(note);
+    });
 
     this.scene.add(this.notesGroup);
+  }
+
+  addNewNote(): void {
+    const newId = Math.floor(Math.random() * 10000);
+    const newNote: NoteData = {
+      id: newId,
+      title: 'Nova Ideia',
+      content: 'Clique em editar para escrever algo...',
+      color: '#ffffff', // Começa branca (ou use sua função de cor aleatória se preferir)
+      date: new Date().toLocaleDateString(),
+      position: {
+        x: (Math.random() - 0.5) * 20, // Cria mais perto do centro (20 em vez de 40)
+        y: (Math.random() - 0.5) * 20,
+        z: (Math.random() - 0.5) * 20
+    }
+  };
+
+  this.noteService.addNote(newNote);
+  this.createSingleSphere(newNote);
+
+  // Opcional: Já abre a nota para você ver
+  this.selectedNote = newNote;
+}
+  private createSingleSphere(note: NoteData): void {
+    const color = new THREE.Color(note.color);
+    const material = new THREE.MeshStandardMaterial({ color: color, roughness: 0.5 });
+
+    // Reutilizamos a geometria criada lá em cima
+    const noteMesh = new THREE.Mesh(this.sphereGeometry, material);
+
+    if (note.position) {
+      noteMesh.position.set(note.position.x, note.position.y, note.position.z);
+    }
+
+    noteMesh.userData = note;
+    this.notesGroup.add(noteMesh);
   }
 
   private startRenderingLoop(): void {
