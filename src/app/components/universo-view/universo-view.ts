@@ -142,7 +142,7 @@ private notesGroup!: THREE.Group;
     const newNote: NoteData = {
       id: newId,
       title: 'Nova Ideia',
-      content: 'Clique em editar para escrever algo...',
+      content: '',
       color: this.noteService.generateRandomColor(), // Começa branca (ou use sua função de cor aleatória se preferir)
       date: new Date().toLocaleDateString(),
       position: {

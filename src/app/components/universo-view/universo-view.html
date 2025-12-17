@@ -13,8 +13,8 @@
     <p class="date">{{ selectedNote.date }}</p>
 
     <div class="content">
-      <textarea *ngIf="isEditing" [(ngModel)]="selectedNote.content" rows="5"></textarea>
-      <p *ngIf="!isEditing">{{ selectedNote.content }}</p>
+      <textarea *ngIf="isEditing" [(ngModel)]="selectedNote.content" rows="5" placeholder="Escreva sua ideia brilhante aqui..."></textarea>
+      <p *ngIf="!isEditing" [class.empty-text]="!selectedNote.content">{{ selectedNote.content || 'Está nota está vazia...' }}</p>
     </div>
 
     <div class="actions">
