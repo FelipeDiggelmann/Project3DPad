@@ -18,27 +18,53 @@ export class NoteService {
   
   private notes: NoteData[] = [];
 
+  private readonly STORAGE_KEY = 'universo_notas_v1';
+
   constructor() {
-    // Ao iniciar o serviço, geramos os dados inicias
-    this.generateInitialNotes();
+    this.loadFromStorage();
   }
 
-  // Gera dados falsos para popular nosso universo
-  private generateInitialNotes(): void {
+  private loadFromStorage(): void {
+    const savedData = localStorage.getItem(this.STORAGE_KEY);
 
-      this.notes.push({
-        id: 1,
-        title: `Bem vindo ao seu Universo`,
-        content: 'Aqui é o início de tudo. Clique no botão "+" para criar novas memórias flutuantes',
-        color: '#00ff88',
-        date: new Date().toLocaleDateString(),
-        position: { x: 0, y: 0, z: 0 } // Bem no centro 
-      });
+    if (savedData) {
+      // Se achou dados salvos, converte de texto JSON de para Objeto
+      this.notes = JSON.parse(savedData);
+    } else {
+      // Se é a primeira vez do usuário, cria a nota de boas-vindas
+      this.initDefaultNote();
+    }
+  }
+
+  private initDefaultNote(): void {
+    this.notes.push({
+      id: 1,
+      title: `Bem vindo ao seu Universo`,
+      content: 'Aqui é o início de tudo. Clique no botão "+" para criar novas memórias flutuantes',
+      color: '#00ff88',
+      date: new Date().toLocaleDateString(),
+      position: { x: 0, y: 0, z: 0 } // Bem no centro
+    });
+    this.saveToStorage();
   }
 
   // Método para o componente pegar as notas
   getNotes(): NoteData[] {
     return this.notes;
+  }
+
+  addNote(newNote: NoteData): void {
+    this.notes.push(newNote);
+    this.saveToStorage();
+  }
+
+  saveUpdates(): void {
+    this.saveToStorage();
+  }
+
+  private saveToStorage(): void {
+    // LocalStorage só aceita texto (string), então usamos JSON.stringify
+    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.notes));
   }
 
   public generateRandomColor(): string {
@@ -49,9 +75,4 @@ export class NoteService {
     }
     return color;
   }
-
-  addNote(newNote: NoteData): void {
-    this.notes.push(newNote);
-  }
-  // No futuro, adição de métodos como addNote(), deleteNote(), etc.
 }

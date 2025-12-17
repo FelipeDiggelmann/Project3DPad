@@ -164,6 +164,9 @@ private notesGroup!: THREE.Group;
     // Como estamos usando objetos por referência (o jeito que o JavaScript funciona),
     // ao digitar no input, o dado já foi atualizado dentro da esfera!
     // Num app real com Backend, aqui chamaríamos o serviço para enviar ao banco de dados.
+
+    // Avisa o serviço para persistir as alterações que fizemos nos objetos
+    this.noteService.saveUpdates();
   }
 
   private createSingleSphere(note: NoteData): void {
