@@ -26,20 +26,14 @@ export class NoteService {
   // Gera dados falsos para popular nosso universo
   private generateInitialNotes(): void {
 
-    for (let i = 0; i < 50; i++) {
       this.notes.push({
-        id: i,
-        title: `Ideia Cósmica #${i + 1}`,
-        content: 'Esta é uma anotação flutuando no espaço-tempo. Clique em "Editar" para alterar este pensamento.',
-        color: this.generateRandomColor(),
+        id: 1,
+        title: `Bem vindo ao seu Universo`,
+        content: 'Aqui é o início de tudo. Clique no botão "+" para criar novas memórias flutuantes',
+        color: '#00ff88',
         date: new Date().toLocaleDateString(),
-        position: {
-          x: (Math.random() - 0.5) * 40,
-          y: (Math.random() - 0.5) * 40,
-          z: (Math.random() - 0.5) * 40
-        }
+        position: { x: 0, y: 0, z: 0 } // Bem no centro 
       });
-    }
   }
 
   // Método para o componente pegar as notas
@@ -47,7 +41,7 @@ export class NoteService {
     return this.notes;
   }
 
-  private generateRandomColor(): string {
+  public generateRandomColor(): string {
     const letters = '0123456789ABCDEF';
     let color = '#';
     for (let i = 0; i < 6; i++) {

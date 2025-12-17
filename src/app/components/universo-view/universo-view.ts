@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { NoteService, NoteData } from '../../services/note';
+import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-universo-view',
   standalone: true,
-  imports : [CommonModule],
+  imports : [CommonModule, FormsModule],
   templateUrl: './universo-view.html',
   styleUrls: ['./universo-view.scss']
 })
@@ -29,6 +30,7 @@ export class UniversoViewComponent implements AfterViewInit {
   private sphereGeometry = new THREE.SphereGeometry(1, 32, 32);
 
   public selectedNote: any = null;
+  public isEditing: boolean = false;
 
   constructor(private noteService: NoteService) { }
 
@@ -52,6 +54,7 @@ export class UniversoViewComponent implements AfterViewInit {
     if (this.intersectedObj) {
       // Pegamos os dados que escondemos no userData
       this.selectedNote = this.intersectedObj.userData;
+      this.isEditing = false;
       console.log('Nota clicada:', this.selectedNote); // Para debug
     } else {
       // Pequena lógica para não fechar a nota se eu clicar na própria interface (overlay)
@@ -140,7 +143,7 @@ private notesGroup!: THREE.Group;
       id: newId,
       title: 'Nova Ideia',
       content: 'Clique em editar para escrever algo...',
-      color: '#ffffff', // Começa branca (ou use sua função de cor aleatória se preferir)
+      color: this.noteService.generateRandomColor(), // Começa branca (ou use sua função de cor aleatória se preferir)
       date: new Date().toLocaleDateString(),
       position: {
         x: (Math.random() - 0.5) * 20, // Cria mais perto do centro (20 em vez de 40)
@@ -154,7 +157,15 @@ private notesGroup!: THREE.Group;
 
   // Opcional: Já abre a nota para você ver
   this.selectedNote = newNote;
-}
+  }
+
+  saveNote(): void {
+    this.isEditing = false;
+    // Como estamos usando objetos por referência (o jeito que o JavaScript funciona),
+    // ao digitar no input, o dado já foi atualizado dentro da esfera!
+    // Num app real com Backend, aqui chamaríamos o serviço para enviar ao banco de dados.
+  }
+
   private createSingleSphere(note: NoteData): void {
     const color = new THREE.Color(note.color);
     const material = new THREE.MeshStandardMaterial({ color: color, roughness: 0.5 });

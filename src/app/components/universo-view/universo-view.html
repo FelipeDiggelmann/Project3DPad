@@ -2,15 +2,31 @@
 
 <div class="overlay-container" *ngIf="selectedNote">
   <div class="note-card">
+    
     <div class="header">
-      <h2>{{ selectedNote.title }}</h2>
-      <button (click)="selectedNote = null">✖</button>
+      <input *ngIf="isEditing" type="text" [(ngModel)]="selectedNote.title" class="edit-title">
+      <h2 *ngIf="!isEditing">{{ selectedNote.title }}</h2>
+
+      <button (click)="selectedNote = null; isEditing = false">✖</button>
     </div>
+
     <p class="date">{{ selectedNote.date }}</p>
+
     <div class="content">
-      {{ selectedNote.content }}
+      <textarea *ngIf="isEditing" [(ngModel)]="selectedNote.content" rows="5"></textarea>
+      <p *ngIf="!isEditing">{{ selectedNote.content }}</p>
     </div>
-    <button class="action-btn">Editar Nota</button>
+
+    <div class="actions">
+      <button *ngIf="!isEditing" class="action-btn" (click)="isEditing = true">
+        Editar Nota ✏️
+      </button>
+
+      <button *ngIf="isEditing" class="action-btn save-btn" (click)="saveNote()">
+        Salvar Alterações 💾
+      </button>
+    </div>
+
   </div>
 </div>
 
