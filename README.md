@@ -7,7 +7,7 @@
 
 > **"Uma aplicação interativa onde ideias orbitam como planetas em um sistema solar digital."**
 
-[🔴 DEMO ONLINE (Clique Aqui)]((https://universe-of-notes.vercel.app/)) 
+[🔴 DEMO ONLINE (Clique Aqui)](https://universe-of-notes.vercel.app/) 
 
 ---
 
