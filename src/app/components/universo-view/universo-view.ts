@@ -22,12 +22,11 @@ export class UniversoViewComponent implements AfterViewInit {
   private scene!: THREE.Scene;
   private camera!: THREE.PerspectiveCamera;
   private controls!: OrbitControls;
-
   private raycaster = new THREE.Raycaster();
   private mouse = new THREE.Vector2(); // Guarda a posição X, Y do mouse na tela
   private intersectedObj: THREE.Object3D | null = null; // Guarda qual objeto o mouse está em cima
-
   private sphereGeometry = new THREE.SphereGeometry(1, 32, 32);
+  private linesMesh!: THREE.LineSegments;
 
   public selectedNote: any = null;
   public isEditing: boolean = false;
@@ -77,7 +76,40 @@ export class UniversoViewComponent implements AfterViewInit {
     this.renderer.setSize(window.innerWidth, window.innerHeight);
   }
 
-private notesGroup!: THREE.Group; 
+private notesGroup!: THREE.Group;
+
+  private createOrbitRings(): void {
+    // Vamos criar 2 anéis visuais para representar as áreas que definimos no service
+    const radii = [8, 16, 32]; // Raio interno e Raio médio
+
+    radii.forEach(radius => {
+      // Cria um círculo
+      const curve = new THREE.EllipseCurve(
+        0, 0,            // ax, aY (centro)
+        radius, radius,  // xRadius, yRadius
+        0, 2 * Math.PI,  // aStartAngle, aEndAngle
+        false,           // aClockwise
+        0                // aRotation
+      );
+
+      const points = curve.getPoints(64); // 64 pontos para ficar redondinho
+      const geometry = new THREE.BufferGeometry().setFromPoints(points);
+
+      const material = new THREE.LineBasicMaterial({ 
+        color: 0xffffff, 
+        transparent: true, 
+        opacity: 0.1 // Bem fraquinho, só uma sugestão visual
+      });
+
+      // O círculo nasce em pé (XY), precisamos deitar ele (XZ)
+      const ring = new THREE.Line(geometry, material);
+      ring.rotation.x = -Math.PI / 2; // Gira 90 graus
+      
+      // Adiciona direto na cena (não no grupo, para não girar junto com os planetas, ou no grupo se quiser que gire)
+      // Sugiro na cena estática para dar a sensação que os planetas orbitam pelo caminho
+      this.scene.add(ring); 
+    });
+  }
 
   private createScene(): void {
     this.scene = new THREE.Scene();
@@ -129,6 +161,8 @@ private notesGroup!: THREE.Group;
     this.controls.minDistance = 5;
     this.controls.maxDistance = 100;
 
+    this.createOrbitRings();
+
     // --- 4. CRIANDO AS NOTAS ---
     this.createNotesUniverse();
   }
@@ -145,28 +179,33 @@ private notesGroup!: THREE.Group;
     });
 
     this.scene.add(this.notesGroup);
+
+    // this.updateConstellation();
   }
 
   addNewNote(): void {
-    const newId = Math.floor(Math.random() * 10000);
+    const newId = Math.floor(Math.random() * 100000);
+    
+    // Nota como NÃO passamos 'position' aqui. O Service vai calcular.
     const newNote: NoteData = {
       id: newId,
-      title: 'Nova Ideia',
+      title: 'Novo Astro',
       content: '',
-      color: this.noteService.generateRandomColor(), // Começa branca (ou use sua função de cor aleatória se preferir)
+      color: this.noteService.generateRandomColor(),
       date: new Date().toLocaleDateString(),
-      position: {
-        x: (Math.random() - 0.5) * 20, // Cria mais perto do centro (20 em vez de 40)
-        y: (Math.random() - 0.5) * 20,
-        z: (Math.random() - 0.5) * 20
+      // position: ... REMOVIDO DAQUI
+    };
+
+    this.noteService.addNote(newNote);
+    
+    // Importante: Pegamos a nota DE VOLTA do serviço, pois agora ela tem a posição calculada lá
+    const savedNote = this.noteService.getNotes().find(n => n.id === newId);
+    
+    if (savedNote) {
+        this.createSingleSphere(savedNote);
+        this.selectedNote = savedNote;
+        // this.updateConstellation();
     }
-  };
-
-  this.noteService.addNote(newNote);
-  this.createSingleSphere(newNote);
-
-  // Opcional: Já abre a nota para você ver
-  this.selectedNote = newNote;
   }
 
   saveNote(): void {
@@ -201,6 +240,8 @@ private notesGroup!: THREE.Group;
 
       // 3. Remove os DADOS do serviço
       this.noteService.deleteNote(noteId);
+
+      // this.updateConstellation();
 
       // 4. Fecha a janela
       this.selectedNote = null;
@@ -267,5 +308,63 @@ private notesGroup!: THREE.Group;
     }
 
     this.renderer.render(this.scene, this.camera);
+  }
+
+  // Desenha linhas entre notas próximas
+  private updateConstellation(): void {
+    // 1. Se já existirem linhas antigas, removemos para recriar
+    if (this.linesMesh) {
+      this.linesMesh.geometry.dispose(); // Limpa memória da geometria
+      (this.linesMesh.material as THREE.Material).dispose(); // Limpa memória do material
+      this.notesGroup.remove(this.linesMesh);
+    }
+
+    // 2. Filtra apenas as esferas (ignora as próprias linhas se já existirem)
+    const storedMeshes = this.notesGroup.children.filter(child => child.type === 'Mesh') as THREE.Mesh[];
+
+    // Array para guardar as posições (x, y, z) de cada ponta das linhas
+    const positions: number[] = [];
+    const connectionDistance = 15; // Distância máxima para conectar (ajuste se quiser mais/menos linhas)
+
+    // 3. Loop duplo para comparar cada nota com todas as outras
+    for (let i = 0; i < storedMeshes.length; i++) {
+      for (let j = i + 1; j < storedMeshes.length; j++) {
+        
+        const meshA = storedMeshes[i];
+        const meshB = storedMeshes[j];
+        
+        // Calcula a distância entre as duas
+        const dist = meshA.position.distanceTo(meshB.position);
+
+        // Se estiverem perto, salvamos os pares de coordenadas
+        if (dist < connectionDistance) {
+          positions.push(
+            meshA.position.x, meshA.position.y, meshA.position.z, // Ponto A
+            meshB.position.x, meshB.position.y, meshB.position.z  // Ponto B
+          );
+        }
+      }
+    }
+
+    // 4. Cria a geometria das linhas baseada nos pontos que achamos
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+
+    // 5. Cria um material de linha fina e transparente
+    const material = new THREE.LineBasicMaterial({
+      color: 0xffffff, // Branco
+      transparent: true,
+      opacity: 0.15 // Bem sutil, para não poluir
+    });
+
+    // 6. Adiciona ao grupo
+    this.linesMesh = new THREE.LineSegments(geometry, material);
+
+    // --- A CORREÇÃO MÁGICA ---
+    // Substituímos a função de detectar mouse por uma função vazia.
+    // Assim, o Raycaster ignora este objeto completamente.
+    this.linesMesh.raycast = () => {};
+
+    this.notesGroup.add(this.linesMesh);
   }
 }

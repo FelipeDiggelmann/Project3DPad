@@ -20,6 +20,11 @@ export class NoteService {
 
   private readonly STORAGE_KEY = 'universo_notas_v1';
 
+  // Configurações do Sistema Solar
+    private readonly ORBIT_1_COUNT = 6;  // 1 Sol + 5 planetas internos
+    private readonly ORBIT_2_COUNT = 15; // Próximos 15
+    // O resto vai para o espaço profundo por enquanto
+
   constructor() {
     this.loadFromStorage();
   }
@@ -41,12 +46,47 @@ export class NoteService {
       id: 1,
       title: `Bem vindo ao seu Universo`,
       content: 'Aqui é o início de tudo. Clique no botão "+" para criar novas memórias flutuantes',
-      color: '#00ff88',
+      color: '#ffaa00',
       date: new Date().toLocaleDateString(),
       position: { x: 0, y: 0, z: 0 } // Bem no centro
     });
     this.saveToStorage();
   }
+
+  // --- A NOVA MATEMÁTICA ---
+    public calculateSmartPosition(index: number): {x: number, y: number, z: number} {
+      // Se for a primeira nota (0), é o Sol
+      if (index === 0) return { x: 0, y: 0, z: 0 };
+
+      let radius = 0;
+      let angleIncrement = 0;
+      
+      // Camada 1: 5 notas próximas (Índices 1 a 5)
+      if (index <= 5) {
+        radius = 8; // Distância do centro
+        // Distribui uniformemente ou aleatoriamente no círculo
+        // Usamos index * val para espalhar, + random para não ficar perfeitamente alinhado
+        angleIncrement = (index * (Math.PI * 2) / 5) + (Math.random() * 0.5);
+      } 
+      // Camada 2: Próximas 15 notas (Índices 6 a 20)
+      else if (index <= 20) {
+        radius = 16;
+        angleIncrement = (index * (Math.PI * 2) / 15) + (Math.random() * 0.5);
+      }
+      // Camada 3: Espaço Profundo (Índices 21+)
+      else {
+        radius = 24 + (index - 20) * 0.5; // Espiral abrindo
+        angleIncrement = index * 0.5;
+      }
+
+      // Converte Polar (Raio/Ângulo) para Cartesiano (X/Z)
+      // Adicionamos um Y (altura) pequeno para o sistema não ser totalmente plano (2D)
+      return {
+        x: Math.cos(angleIncrement) * radius,
+        y: (Math.random() - 0.5) * 4, // Variação leve de altura
+        z: Math.sin(angleIncrement) * radius
+      };
+    }
 
   // Método para o componente pegar as notas
   getNotes(): NoteData[] {
@@ -54,6 +94,9 @@ export class NoteService {
   }
 
   addNote(newNote: NoteData): void {
+    if (!newNote.position) {
+        newNote.position = this.calculateSmartPosition(this.notes.length);
+      }
     this.notes.push(newNote);
     this.saveToStorage();
   }
