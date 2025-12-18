@@ -56,7 +56,6 @@ O projeto foi construído utilizando as melhores práticas de desenvolvimento mo
 
 ## 📸 Screenshots
 
-*(Espaço reservado para você colocar prints do seu projeto. Sugestão: Tire um print do sistema solar inteiro e outro da nota aberta)*
 
 | Visão Geral do Sistema | Edição de Nota |
 |:---:|:---:|
