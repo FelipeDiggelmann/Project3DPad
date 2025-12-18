@@ -30,6 +30,9 @@ export class UniversoViewComponent implements AfterViewInit {
 
   public selectedNote: any = null;
   public isEditing: boolean = false;
+  // Controle da Busca
+  public searchTerm: string = '';
+  public searchResults: NoteData[] = [];
 
   constructor(private noteService: NoteService) { }
 
@@ -49,20 +52,28 @@ export class UniversoViewComponent implements AfterViewInit {
 
   @HostListener('click', ['$event'])
   onClick(event: MouseEvent) {
-    // Só tentamos abrir nota se o Raycaster encontrou algo no 'onMouseMove'
+    // 1. Verifica onde foi o clique
+    const target = event.target as HTMLElement;
+
+    // SE O USUÁRIO CLICOU EM BOTÃO, INPUT OU DENTRO DA NOTA...
+    // Paramos a função aqui. Não queremos mexer no 3D.
+    if (target.closest('button') || target.closest('input') || target.closest('.note-card')) {
+      return;
+    }
+
+    // 2. Se clicou no Fundo Escuro (Overlay) ou no Canvas vazio -> Fecha a nota
+    if (this.selectedNote && (target.tagName === 'CANVAS' || target.classList.contains('overlay-container'))) {
+      this.closeNote();
+      return;
+    }
+
+    // 3. Se clicou em uma Esfera 3D (e não tem nota aberta atrapalhando)
     if (this.intersectedObj) {
-      // Pegamos os dados que escondemos no userData
-      this.selectedNote = this.intersectedObj.userData;
-      this.isEditing = false;
-      console.log('Nota clicada:', this.selectedNote); // Para debug
-    } else {
-      // Pequena lógica para não fechar a nota se eu clicar na própria interface (overlay)
-      // O Javascript propaga eventos. Se clicar no fundo do canvas (nada), fecha.
-      const target = event.target as HTMLElement;
-      if (target.tagName === 'CANVAS') {
-        // Se clicar no fundo vazio, fecha a nota
-        this.selectedNote = null;
-      }     
+        // Encontra a nota correspondente
+        const note = this.intersectedObj.userData as NoteData;
+        
+        // Usa nossa função inteligente que foca a câmera!
+        this.focusOnNote(note);
     }
   }
 
@@ -189,7 +200,7 @@ private notesGroup!: THREE.Group;
     // Nota como NÃO passamos 'position' aqui. O Service vai calcular.
     const newNote: NoteData = {
       id: newId,
-      title: 'Novo Astro',
+      title: '',
       content: '',
       color: this.noteService.generateRandomColor(),
       date: new Date().toLocaleDateString(),
@@ -246,18 +257,100 @@ private notesGroup!: THREE.Group;
       // 4. Fecha a janela
       this.selectedNote = null;
       this.isEditing = false;
+
+      if (this.controls) {
+        this.controls.target.set(0, 0, 0);
+        this.camera.position.set(0, 20, 50);
+        this.controls.update();
+      }
+    }
+  }
+
+  onSearch(): void {
+    const term = this.searchTerm.toLowerCase().trim();
+    if (!term) {
+      this.searchResults = [];
+      return;
+    }
+    const allNotes = this.noteService.getNotes();
+    this.searchResults = allNotes.filter(note => 
+      note.title.toLowerCase().includes(term) || 
+      note.content.toLowerCase().includes(term)
+    );
+  }
+
+  focusOnNote(note: NoteData): void {
+    // 1. Precisamos achar a ESFERA (Mesh) correspondente a essa nota
+    // Procuramos dentro do grupo qual filho tem o ID igual ao da nota
+    const targetMesh = this.notesGroup.children.find(
+        child => child.userData['id'] === note.id
+    ) as THREE.Mesh;
+
+    if (!targetMesh) return;
+
+    // 2. Limpa a busca
+    this.searchTerm = '';
+    this.searchResults = [];
+
+    // 3. Pega a posição REAL no mundo (World Position)
+    // O Three.js calcula onde ela está AGORA, considerando a rotação atual
+    const worldPosition = new THREE.Vector3();
+    targetMesh.getWorldPosition(worldPosition);
+
+    // 4. Configura o alvo da câmera para esse ponto exato
+    this.controls.target.copy(worldPosition);
+
+    // 5. Move a câmera para perto (usando a posição real calculada)
+    this.camera.position.set(
+      worldPosition.x + 4,
+      worldPosition.y + 2,
+      worldPosition.z + 4
+    );
+
+    this.controls.update();
+
+    // 6. Seleciona a nota (Isso vai ativar o PAUSE no loop de renderização)
+    this.selectedNote = note;
+    this.isEditing = false;
+  }
+
+  closeNote(): void {
+    this.selectedNote = null;
+    this.isEditing = false;
+    
+    // Opcional: Faz a câmera olhar para o centro do universo (Sol) novamente
+    // Isso dá uma sensação de "Zoom Out"
+    if (this.controls) {
+      this.controls.target.set(0, 0, 0);
+      this.camera.position.set(0, 20, 50);
+      this.controls.update();
     }
   }
 
   private createSingleSphere(note: NoteData): void {
     const color = new THREE.Color(note.color);
-    const material = new THREE.MeshStandardMaterial({ color: color, roughness: 0.5 });
-
-    // Reutilizamos a geometria criada lá em cima
+    
+    // O Sol ganha um material emissivo (brilha no escuro) para se destacar
+    const isSun = note.id === 1;
+    
+    const material = new THREE.MeshStandardMaterial({ 
+      color: color, 
+      roughness: isSun ? 0.2 : 0.5, // Sol é mais liso/brilhante
+      emissive: isSun ? color : new THREE.Color(0,0,0), // Sol emite luz própria
+      emissiveIntensity: 0.5 // Intensidade do brilho
+    });
+    
     const noteMesh = new THREE.Mesh(this.sphereGeometry, material);
 
+    // Posiciona
     if (note.position) {
       noteMesh.position.set(note.position.x, note.position.y, note.position.z);
+    }
+
+    // --- A MUDANÇA DE TAMANHO ---
+    if (isSun) {
+      // Escala 4x maior em todos os eixos (X, Y, Z)
+      noteMesh.scale.set(2.5, 2.5, 2.5); 
     }
 
     noteMesh.userData = note;
@@ -274,8 +367,8 @@ private notesGroup!: THREE.Group;
     if (this.controls) this.controls.update();
 
     // 3. Verifica se o laser bateu nas esferas (filhos do grupo notesGroup)
-    if (this.notesGroup) {
-      this.notesGroup.rotation.y += 0.002; // Mantém a rotação lenta
+    if (this.notesGroup && !this.selectedNote) {
+      this.notesGroup.rotation.y += 0.003; // Mantém a rotação lenta
 
       const intersects = this.raycaster.intersectObjects(this.notesGroup.children);
 

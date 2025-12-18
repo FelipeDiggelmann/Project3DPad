@@ -22,7 +22,7 @@
   justify-content: center;
   align-items: center;
   background: rgba(0, 0, 0, 0.4); /* Fundo levemente escuro para foco */
-  pointer-events: none; /* Deixa o mouse passar para o canvas nas áreas vazias */
+  pointer-events: auto; /* Deixa o mouse passar para o canvas nas áreas vazias */
 }
 
 .note-card {
@@ -42,6 +42,14 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: 8px;
+
+    input {
+        /* ... estilos do input ... */
+        &::placeholder {
+          color: rgba(255, 255, 255, 0.4);
+          font-style: italic;
+        }
+      }
 
     h2 { margin: 0; font-size: 1.5rem; }
     
@@ -181,3 +189,80 @@
     background: #00ff88; /* Verde para indicar sucesso */
     color: #003300;
   }
+
+  .search-container {
+  position: absolute;
+  top: 20px;
+  left: 20px; /* Ou 'left: 50%; transform: translateX(-50%);' para centralizar */
+  width: 300px;
+  z-index: 20; /* Fica acima de tudo */
+  font-family: sans-serif;
+
+  input {
+    width: 100%;
+    padding: 12px 20px;
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 25px;
+    color: white;
+    font-size: 1rem;
+    outline: none;
+    backdrop-filter: blur(5px);
+    transition: all 0.3s;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+
+    &:focus {
+      background: rgba(0, 0, 0, 0.8);
+      border-color: #00ff88;
+      box-shadow: 0 0 15px rgba(0, 255, 136, 0.3);
+    }
+  }
+
+  .search-results {
+    list-style: none;
+    margin: 10px 0 0 0;
+    padding: 0;
+    background: rgba(20, 20, 20, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    max-height: 300px;
+    overflow-y: auto;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+
+    li {
+      padding: 12px 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: background 0.2s;
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.1);
+      }
+
+      .result-title {
+        color: white;
+        font-weight: bold;
+      }
+
+      .result-date {
+        font-size: 0.8rem;
+        color: #888;
+      }
+    }
+  }
+}
+
+/* Adicione dentro de .note-card */
+.read-only-msg {
+  text-align: center;
+  color: #ffaa00; /* Laranja dourado */
+  font-style: italic;
+  font-size: 0.9rem;
+  width: 100%;
+  margin-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 15px;
+}

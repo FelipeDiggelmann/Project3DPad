@@ -1,13 +1,29 @@
 <canvas #rendererCanvas id="renderCanvas"></canvas>
 
+<div class="search-container">
+  <input 
+    type="text" 
+    placeholder="🔭 Localizar astro..." 
+    [(ngModel)]="searchTerm" 
+    (input)="onSearch()"
+  >
+  
+  <ul class="search-results" *ngIf="searchResults.length > 0">
+    <li *ngFor="let note of searchResults" (click)="focusOnNote(note)">
+      <span class="result-title">{{ note.title }}</span>
+      <span class="result-date">{{ note.date }}</span>
+    </li>
+  </ul>
+</div>
+
 <div class="overlay-container" *ngIf="selectedNote">
   <div class="note-card">
     
     <div class="header">
-      <input *ngIf="isEditing" type="text" [(ngModel)]="selectedNote.title" class="edit-title">
-      <h2 *ngIf="!isEditing">{{ selectedNote.title }}</h2>
+      <input *ngIf="isEditing" type="text" [(ngModel)]="selectedNote.title" placeholder="Dê um nome para este astro..." class="edit-title">
+      <h2 *ngIf="!isEditing">{{ selectedNote.title ? selectedNote.title : 'Novo Astro' }}</h2>
 
-      <button (click)="selectedNote = null; isEditing = false">✖</button>
+      <button (click)="closeNote()">✖</button>
     </div>
 
     <p class="date">{{ selectedNote.date }}</p>
@@ -18,19 +34,29 @@
     </div>
 
     <div class="actions">
-      <ng-container *ngIf="!isEditing">
-        <button class="action-btn delete-btn" (click)="deleteCurrentNote()">
-          Excluir 🗑️
-        </button>
+      
+      <ng-container *ngIf="selectedNote.id !== 1">
         
-        <button class="action-btn" (click)="isEditing = true">
-          Editar Nota ✏️
+        <ng-container *ngIf="!isEditing">
+          <button class="action-btn delete-btn" (click)="deleteCurrentNote()">
+            Excluir 🗑️
+          </button>
+          
+          <button class="action-btn" (click)="isEditing = true">
+            Editar Nota ✏️
+          </button>
+        </ng-container>
+
+        <button *ngIf="isEditing" class="action-btn save-btn" (click)="saveNote()">
+          Salvar Alterações 💾
         </button>
+
       </ng-container>
 
-      <button *ngIf="isEditing" class="action-btn save-btn" (click)="saveNote()">
-        Salvar Alterações 💾
-      </button>
+      <p *ngIf="selectedNote.id === 1" class="read-only-msg">
+        ⭐ Este é o núcleo do seu universo e não pode ser alterado.
+      </p>
+
     </div>
 
   </div>
