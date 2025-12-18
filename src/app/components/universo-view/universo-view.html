@@ -18,9 +18,15 @@
     </div>
 
     <div class="actions">
-      <button *ngIf="!isEditing" class="action-btn" (click)="isEditing = true">
-        Editar Nota ✏️
-      </button>
+      <ng-container *ngIf="!isEditing">
+        <button class="action-btn delete-btn" (click)="deleteCurrentNote()">
+          Excluir 🗑️
+        </button>
+        
+        <button class="action-btn" (click)="isEditing = true">
+          Editar Nota ✏️
+        </button>
+      </ng-container>
 
       <button *ngIf="isEditing" class="action-btn save-btn" (click)="saveNote()">
         Salvar Alterações 💾

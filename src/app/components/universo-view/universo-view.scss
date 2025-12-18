@@ -90,6 +90,28 @@
 
     &:hover { transform: scale(1.02); }
   }
+
+  .actions {
+      display: flex;
+      gap: 10px; /* Separa os botões */
+      
+      .action-btn {
+        flex: 1; /* Faz os botões dividirem o espaço igualmente */
+        /* ... seus estilos anteriores ... */
+      }
+
+      /* Estilo específico para o botão de deletar */
+      .delete-btn {
+        background: rgba(255, 50, 50, 0.2); /* Fundo vermelho transparente */
+        color: #ffcccc;
+        border: 1px solid rgba(255, 50, 50, 0.5);
+        
+        &:hover {
+          background: rgba(255, 50, 50, 0.8);
+          color: white;
+        }
+      }
+    }
 }
 
 .hint {

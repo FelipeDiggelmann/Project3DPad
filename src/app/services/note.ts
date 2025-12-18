@@ -62,6 +62,12 @@ export class NoteService {
     this.saveToStorage();
   }
 
+  deleteNote(id: number): void {
+    // Filtra o array, mantendo apenas as notas que NÃO têm esse ID
+    this.notes = this.notes.filter(note => note.id !== id);
+    this.saveToStorage();
+  }
+
   private saveToStorage(): void {
     // LocalStorage só aceita texto (string), então usamos JSON.stringify
     localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.notes));

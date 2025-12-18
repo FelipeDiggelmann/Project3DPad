@@ -67,6 +67,16 @@ export class UniversoViewComponent implements AfterViewInit {
     }
   }
 
+  @HostListener('window:resize')
+  onWindowResize() {
+    // 1. Atualiza a proporção da câmera (largura / altura)
+    this.camera.aspect = window.innerWidth / window.innerHeight;
+    this.camera.updateProjectionMatrix();
+
+    // 2. Atualiza o tamanho da pintura na tela
+    this.renderer.setSize(window.innerWidth, window.innerHeight);
+  }
+
 private notesGroup!: THREE.Group; 
 
   private createScene(): void {
@@ -167,6 +177,35 @@ private notesGroup!: THREE.Group;
 
     // Avisa o serviço para persistir as alterações que fizemos nos objetos
     this.noteService.saveUpdates();
+  }
+
+  deleteCurrentNote(): void {
+    if (!this.selectedNote) return;
+
+    // 1. Pergunta de segurança (Confirmação nativa do navegador)
+    const confirmDelete = window.confirm('Tem certeza que deseja apagar esta ideia para sempre?');
+    
+    if (confirmDelete) {
+      const noteId = this.selectedNote.id;
+
+      // 2. Remove a esfera VISUALMENTE da cena
+      // Procuramos dentro do grupo de notas qual malha (mesh) tem o ID igual ao da nota
+      const meshToRemove = this.notesGroup.children.find(child => child.userData['id'] === noteId);
+      
+      if (meshToRemove) {
+        this.notesGroup.remove(meshToRemove);
+        
+        // (Opcional avançado) Em apps grandes, deveríamos limpar a memória da geometria também
+        // mas para este portfólio o Garbage Collector do JS dá conta.
+      }
+
+      // 3. Remove os DADOS do serviço
+      this.noteService.deleteNote(noteId);
+
+      // 4. Fecha a janela
+      this.selectedNote = null;
+      this.isEditing = false;
+    }
   }
 
   private createSingleSphere(note: NoteData): void {
